@@ -1,0 +1,16 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "markito",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"compatibility_date": "2026-06-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"observability": {
+		"enabled": true
+	}
+	// R2 access uses the S3 API (so the UI can list/pick any bucket), not a binding.
+	// Set these as secrets:  wrangler secret put R2_ACCOUNT_ID  (and KEY_ID / SECRET)
+}
