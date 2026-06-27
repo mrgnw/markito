@@ -51,7 +51,7 @@ node build        # run the production server
 
 ## Roadmap
 
-See [todos/](todos/): Cloudflare Tunnel + Access for remote use, and an R2 text-file backend.
+Live behind Cloudflare Access at `md.example.com` (see [todos/done/](todos/done/)). Next: an R2 text-file backend ([todos/r2-backend.md](todos/r2-backend.md)).
 
 ## License
 

@@ -1,5 +1,15 @@
 # Remote access via Cloudflare Tunnel + Access
 
+> **DONE 2026-06-27** — live at **https://md.example.com** behind Cloudflare Access.
+>
+> - DNS: `md.example.com` CNAME → Cloudflare tunnel (`cloudflared tunnel route dns`, cert.pem).
+> - Ingress: `md.example.com → http://localhost:5179` added to the token-managed Cloudflare tunnel
+>   via the CF API using the existing wrangler OAuth token (`connectivity:admin`) —
+>   see `~/dev/scripts/markito-cf-ingress.py`.
+> - Access: self-hosted app for `md.example.com`, policy cloned from `dash.example.com` —
+>   see `~/dev/scripts/markito-cf-access.py` (needs a 1-perm token: Access Apps:Edit).
+> - Serving: service `markito` (`node bin/markito.js --port 5179`), autostart on.
+
 Make a locally-running `markito` reachable remotely, secured the same way as d1dash / drover.
 
 ## Goal
