@@ -113,7 +113,7 @@
 
 	<aside class="sidebar" class:open={sidebarOpen}>
 		<div class="sidebar-header">
-			<span class="logo">✍️ edith</span>
+			<span class="logo">✍️ modown</span>
 			<button class="add-btn" title="Add folder" onclick={() => { addingFolder = !addingFolder; folderError = ''; }}>+</button>
 		</div>
 		{#if addingFolder}

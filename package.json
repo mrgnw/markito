@@ -1,10 +1,10 @@
 {
-	"name": "edith",
+	"name": "@mrgnw/modown",
 	"version": "0.1.0",
 	"description": "Edit local markdown files in your browser. Run locally, add folders, edit.",
 	"type": "module",
 	"bin": {
-		"edith": "bin/edith.js"
+		"modown": "bin/modown.js"
 	},
 	"files": [
 		"build",
