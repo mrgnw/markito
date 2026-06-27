@@ -6,7 +6,14 @@ declare global {
 		// interface Locals {}
 		// interface PageData {}
 		// interface PageState {}
-		// interface Platform {}
+		interface Platform {
+			env?: {
+				R2_ACCOUNT_ID?: string;
+				R2_ACCESS_KEY_ID?: string;
+				R2_SECRET_ACCESS_KEY?: string;
+				MARKITO_CONFIG_JSON?: string;
+			};
+		}
 	}
 }
 
