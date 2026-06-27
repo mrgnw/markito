@@ -7,6 +7,12 @@
 	let addingFolder = $state(false);
 	let newFolderPath = $state('');
 	let folderError = $state('');
+	let folderBackend: 'fs' | 'r2' = $state('fs');
+	let r2Buckets: string[] = $state([]);
+	let r2Configured = $state(false);
+	let r2Bucket = $state('');
+	let r2Prefix = $state('');
+	let r2Name = $state('');
 	let selectedPath = $state('');
 	let editorContent = $state('');
 	let editorKey = $state('');
@@ -66,20 +72,46 @@
 		}
 	}
 
-	async function addFolder() {
-		const path = newFolderPath.trim();
-		if (!path) return;
+	async function openAdd() {
+		addingFolder = !addingFolder;
 		folderError = '';
+		if (addingFolder && r2Buckets.length === 0) {
+			const res = await fetch('/api/r2/buckets');
+			if (res.ok) {
+				const data = await res.json();
+				r2Configured = data.configured;
+				r2Buckets = data.buckets ?? [];
+			}
+		}
+	}
+
+	async function addFolder() {
+		folderError = '';
+		let body: Record<string, string>;
+		if (folderBackend === 'r2') {
+			if (!r2Bucket) {
+				folderError = 'pick a bucket';
+				return;
+			}
+			body = { backend: 'r2', bucket: r2Bucket, prefix: r2Prefix.trim(), name: r2Name.trim() };
+		} else {
+			const path = newFolderPath.trim();
+			if (!path) return;
+			body = { backend: 'fs', path };
+		}
 		const res = await fetch('/api/folders', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ path })
+			body: JSON.stringify(body)
 		});
 		if (!res.ok) {
 			folderError = (await res.json().catch(() => ({}))).message ?? 'Failed to add folder';
 			return;
 		}
 		newFolderPath = '';
+		r2Bucket = '';
+		r2Prefix = '';
+		r2Name = '';
 		addingFolder = false;
 		await loadTree();
 	}
@@ -114,19 +146,37 @@
 	<aside class="sidebar" class:open={sidebarOpen}>
 		<div class="sidebar-header">
 			<span class="logo">✍️ markito</span>
-			<button class="add-btn" title="Add folder" onclick={() => { addingFolder = !addingFolder; folderError = ''; }}>+</button>
+			<button class="add-btn" title="Add folder" onclick={openAdd}>+</button>
 		</div>
 		{#if addingFolder}
 			<form class="add-folder" onsubmit={(e) => { e.preventDefault(); addFolder(); }}>
-				<!-- svelte-ignore a11y_autofocus -->
-				<input
-					type="text"
-					placeholder="/absolute/path/to/folder"
-					bind:value={newFolderPath}
-					autocomplete="off"
-					spellcheck="false"
-					autofocus
-				/>
+				<div class="backend-toggle">
+					<button type="button" class:active={folderBackend === 'fs'} onclick={() => folderBackend = 'fs'}>Local</button>
+					<button type="button" class:active={folderBackend === 'r2'} onclick={() => folderBackend = 'r2'}>R2</button>
+				</div>
+				{#if folderBackend === 'fs'}
+					<!-- svelte-ignore a11y_autofocus -->
+					<input
+						type="text"
+						placeholder="/absolute/path/to/folder"
+						bind:value={newFolderPath}
+						autocomplete="off"
+						spellcheck="false"
+						autofocus
+					/>
+				{:else if !r2Configured}
+					<p class="r2-hint">R2 not configured. Set <code>R2_ACCOUNT_ID</code>, <code>R2_ACCESS_KEY_ID</code>, <code>R2_SECRET_ACCESS_KEY</code>.</p>
+				{:else}
+					<select bind:value={r2Bucket}>
+						<option value="" disabled>Pick a bucket…</option>
+						{#each r2Buckets as bucket}
+							<option value={bucket}>{bucket}</option>
+						{/each}
+					</select>
+					<input type="text" placeholder="prefix/ (optional)" bind:value={r2Prefix} autocomplete="off" spellcheck="false" />
+					<input type="text" placeholder="display name (optional)" bind:value={r2Name} autocomplete="off" spellcheck="false" />
+					<button type="submit" class="add-submit">Add R2 folder</button>
+				{/if}
 				{#if folderError}<span class="folder-error">{folderError}</span>{/if}
 			</form>
 		{/if}
@@ -233,7 +283,8 @@
 		padding: 0.5rem 1rem;
 		border-bottom: 1px solid #21262d;
 	}
-	.add-folder input {
+	.add-folder input,
+	.add-folder select {
 		width: 100%;
 		box-sizing: border-box;
 		background: #0d1117;
@@ -243,6 +294,47 @@
 		padding: 0.35rem 0.5rem;
 		font-size: 0.8rem;
 		font-family: 'SF Mono', monospace;
+		margin-bottom: 0.4rem;
+	}
+	.backend-toggle {
+		display: flex;
+		gap: 0.25rem;
+		margin-bottom: 0.5rem;
+	}
+	.backend-toggle button {
+		flex: 1;
+		background: #0d1117;
+		border: 1px solid #30363d;
+		color: #8b949e;
+		border-radius: 4px;
+		padding: 0.3rem;
+		font-size: 0.75rem;
+		cursor: pointer;
+	}
+	.backend-toggle button.active {
+		background: rgba(56, 139, 253, 0.15);
+		border-color: #1f6feb;
+		color: #58a6ff;
+	}
+	.add-submit {
+		width: 100%;
+		background: rgba(56, 139, 253, 0.15);
+		border: 1px solid #1f6feb;
+		color: #58a6ff;
+		border-radius: 4px;
+		padding: 0.35rem;
+		font-size: 0.8rem;
+		cursor: pointer;
+	}
+	.r2-hint {
+		font-size: 0.72rem;
+		color: #8b949e;
+		margin: 0.25rem 0;
+		line-height: 1.4;
+	}
+	.r2-hint code {
+		color: #c9d1d9;
+		font-size: 0.7rem;
 	}
 	.folder-error {
 		display: block;
