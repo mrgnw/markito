@@ -15,8 +15,8 @@ interface Config {
 const MAX_FOLDERS = 64;
 
 const configPath =
-	process.env.MODOWN_CONFIG ??
-	join(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'), 'modown', 'config.json');
+	process.env.MARKITO_CONFIG ??
+	join(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'), 'markito', 'config.json');
 
 async function read(): Promise<Config> {
 	try {
@@ -52,10 +52,10 @@ async function assertDir(path: string): Promise<void> {
 	if (!info.isDirectory()) throw new Error('not a directory');
 }
 
-// Seed folders passed via `--folder` CLI flags (set by bin as MODOWN_FOLDERS,
+// Seed folders passed via `--folder` CLI flags (set by bin as MARKITO_FOLDERS,
 // newline-separated absolute paths). Added on startup if not already present.
 async function withSeeds(config: Config): Promise<Config> {
-	const seeds = (process.env.MODOWN_FOLDERS ?? '').split('\n').map((s) => s.trim()).filter(Boolean);
+	const seeds = (process.env.MARKITO_FOLDERS ?? '').split('\n').map((s) => s.trim()).filter(Boolean);
 	if (seeds.length === 0) return config;
 
 	const existing = new Set(config.folders.map((f) => f.path));

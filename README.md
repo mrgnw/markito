@@ -1,4 +1,4 @@
-# modown
+# markito
 
 Edit your local markdown files in the browser. Run it locally, point it at one or more folders, edit with a clean WYSIWYG editor (autosaves to disk).
 
@@ -9,10 +9,10 @@ Edit your local markdown files in the browser. Run it locally, point it at one o
 
 ```sh
 # run it, then add folders from the web UI
-npx @mrgnw/modown
+npx markito
 
 # or seed it with folders up front (repeatable)
-npx @mrgnw/modown --folder ~/notes --folder ~/dev/docs
+npx markito --folder ~/notes --folder ~/dev/docs
 ```
 
 Open http://localhost:5179. Click **+** in the sidebar to add a folder (paste an absolute path); hover a folder to remove it. Folders persist to config, so next run they're still there.
@@ -22,13 +22,13 @@ Open http://localhost:5179. Click **+** in the sidebar to add a folder (paste an
 ```
 -f, --folder <path>   Add a folder to edit (repeatable). Persisted to config.
 -p, --port <port>     Port to listen on (default 5179)
--c, --config <path>   Config file (default ~/.config/modown/config.json)
+-c, --config <path>   Config file (default ~/.config/markito/config.json)
 -h, --help            Show help
 ```
 
 ## Config
 
-`~/.config/modown/config.json` (respects `$XDG_CONFIG_HOME`), auto-created on first folder add:
+`~/.config/markito/config.json` (respects `$XDG_CONFIG_HOME`), auto-created on first folder add:
 
 ```json
 {

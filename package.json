@@ -1,10 +1,10 @@
 {
-	"name": "@mrgnw/modown",
+	"name": "markito",
 	"version": "0.1.0",
 	"description": "Edit local markdown files in your browser. Run locally, add folders, edit.",
 	"type": "module",
 	"bin": {
-		"modown": "bin/modown.js"
+		"markito": "bin/markito.js"
 	},
 	"files": [
 		"build",
