@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import FileTree from '$lib/FileTree.svelte';
+	import FolderPicker from '$lib/FolderPicker.svelte';
 	import type { FileEntry } from '$lib/types';
 
 	let files: FileEntry[] = $state([]);
 	let addingFolder = $state(false);
-	let newFolderPath = $state('');
 	let folderError = $state('');
 	let folderBackend: 'fs' | 'r2' = $state('fs');
 	let r2Buckets: string[] = $state([]);
@@ -85,20 +85,8 @@
 		}
 	}
 
-	async function addFolder() {
+	async function postFolder(body: Record<string, string>): Promise<boolean> {
 		folderError = '';
-		let body: Record<string, string>;
-		if (folderBackend === 'r2') {
-			if (!r2Bucket) {
-				folderError = 'pick a bucket';
-				return;
-			}
-			body = { backend: 'r2', bucket: r2Bucket, prefix: r2Prefix.trim(), name: r2Name.trim() };
-		} else {
-			const path = newFolderPath.trim();
-			if (!path) return;
-			body = { backend: 'fs', path };
-		}
 		const res = await fetch('/api/folders', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -106,14 +94,33 @@
 		});
 		if (!res.ok) {
 			folderError = (await res.json().catch(() => ({}))).message ?? 'Failed to add folder';
-			return;
+			return false;
 		}
-		newFolderPath = '';
-		r2Bucket = '';
-		r2Prefix = '';
-		r2Name = '';
 		addingFolder = false;
 		await loadTree();
+		return true;
+	}
+
+	function pickFsFolder(path: string) {
+		postFolder({ backend: 'fs', path });
+	}
+
+	async function addR2() {
+		if (!r2Bucket) {
+			folderError = 'pick a bucket';
+			return;
+		}
+		const ok = await postFolder({
+			backend: 'r2',
+			bucket: r2Bucket,
+			prefix: r2Prefix.trim(),
+			name: r2Name.trim()
+		});
+		if (ok) {
+			r2Bucket = '';
+			r2Prefix = '';
+			r2Name = '';
+		}
 	}
 
 	async function removeFolder(id: string) {
@@ -149,20 +156,15 @@
 			<button class="add-btn" title="Add folder" onclick={openAdd}>+</button>
 		</div>
 		{#if addingFolder}
-			<form class="add-folder" onsubmit={(e) => { e.preventDefault(); addFolder(); }}>
+			<form class="add-folder" onsubmit={(e) => { e.preventDefault(); addR2(); }}>
 				<div class="backend-toggle">
 					<button type="button" class:active={folderBackend === 'fs'} onclick={() => folderBackend = 'fs'}>Local</button>
 					<button type="button" class:active={folderBackend === 'r2'} onclick={() => folderBackend = 'r2'}>R2</button>
 				</div>
 				{#if folderBackend === 'fs'}
-					<!-- svelte-ignore a11y_autofocus -->
-					<input
-						type="text"
-						placeholder="/absolute/path/to/folder"
-						bind:value={newFolderPath}
-						autocomplete="off"
-						spellcheck="false"
-						autofocus
+					<FolderPicker
+						list={(p) => fetch(`/api/fs/list?path=${encodeURIComponent(p)}`).then((r) => r.json())}
+						onpick={pickFsFolder}
 					/>
 				{:else if !r2Configured}
 					<p class="r2-hint">R2 not configured. Set <code>R2_ACCOUNT_ID</code>, <code>R2_ACCESS_KEY_ID</code>, <code>R2_SECRET_ACCESS_KEY</code>.</p>
