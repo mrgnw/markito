@@ -13,8 +13,11 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
+		"build:cf": "ADAPTER=cloudflare vite build",
 		"start": "node build",
 		"preview": "vite preview",
+		"deploy": "ADAPTER=cloudflare vite build && wrangler deploy",
+		"test": "bun scripts/test-buildtree.ts",
 		"prepare": "svelte-kit sync || echo ''",
 		"prepublishOnly": "vite build",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -22,18 +25,21 @@
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.0",
+		"@sveltejs/adapter-cloudflare": "^7.2.9",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@types/node": "^26.0.1",
 		"svelte": "^5.54.0",
 		"svelte-check": "^4.4.2",
 		"typescript": "^5.9.3",
-		"vite": "^7.3.1"
+		"vite": "^7.3.1",
+		"wrangler": "^4.105.0"
 	},
 	"dependencies": {
 		"@milkdown/crepe": "^7.20.0",
 		"@milkdown/kit": "^7.20.0",
 		"@milkdown/plugin-listener": "^7.20.0",
-		"@sveltejs/adapter-node": "^5.5.4"
+		"@sveltejs/adapter-node": "^5.5.4",
+		"aws4fetch": "^1.0.20"
 	}
 }

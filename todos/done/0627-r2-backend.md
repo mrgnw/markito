@@ -1,8 +1,10 @@
 # Cloudflare R2 as a text-file backend
 
-After the local MVP + Cloudflare Tunnel/Access work, add R2 as an alternative storage backend so files can live in object storage instead of (or alongside) the local filesystem.
+> **DONE 2026-06-27** — branch `r2-backend`. R2 backend via S3 API (UI picks buckets),
+> `fs`/`r2` storage dispatch, conditional node/cloudflare adapter, Workers build + wrangler.
+> Follow-up: [Workers config persistence in KV](../r2-workers-config.md).
 
-> Do not implement yet — capture the idea only.
+After the local MVP + Cloudflare Tunnel/Access work, add R2 as an alternative storage backend so files can live in object storage instead of (or alongside) the local filesystem.
 
 ## Goal
 

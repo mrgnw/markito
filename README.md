@@ -40,6 +40,42 @@ Open http://localhost:5179. Click **+** in the sidebar to add a folder (paste an
 
 Only `.md` files are shown and editable. Each file is addressed as `{folderId}/{relative/path}`; reads and writes are guarded against escaping a folder's root.
 
+## Storage backends
+
+A folder is backed by either the local filesystem (`fs`) or a Cloudflare R2 bucket (`r2`):
+
+```json
+{ "folders": [
+  { "id": "notes",   "backend": "fs", "path": "~/notes" },
+  { "id": "journal", "backend": "r2", "bucket": "my-bucket", "prefix": "journal/" }
+] }
+```
+
+R2 uses the **S3 API** (so the UI can list and pick any bucket), via these credentials —
+env vars locally, Worker secrets on Cloudflare:
+
+```sh
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+```
+
+In the **+ Add folder** dialog, toggle **R2**, pick a bucket, and (optionally) set a key prefix.
+
+## Deploy targets
+
+Two builds from one codebase (conditional adapter in `svelte.config.js`):
+
+```sh
+npm run build            # adapter-node  — local fs folders (the md.example.com service)
+npm run build:cf         # adapter-cloudflare — Workers (R2 folders)
+npm run deploy           # build:cf + wrangler deploy
+```
+
+On Workers, set the R2 creds as secrets (`wrangler secret put R2_ACCOUNT_ID`, etc.).
+Folder config on Workers is currently read-only via `MARKITO_CONFIG_JSON` — see
+[todos/r2-workers-config.md](todos/r2-workers-config.md).
+
 ## Develop
 
 ```sh
@@ -51,7 +87,7 @@ node build        # run the production server
 
 ## Roadmap
 
-Live behind Cloudflare Access at `md.example.com` (see [todos/done/](todos/done/)). Next: an R2 text-file backend ([todos/r2-backend.md](todos/r2-backend.md)).
+Live behind Cloudflare Access at `md.example.com` (see [todos/done/](todos/done/)). R2 backend + Workers deploy landed; remaining: [Workers config persistence in KV](todos/r2-workers-config.md).
 
 ## License
 
