@@ -11,6 +11,14 @@
 	"observability": {
 		"enabled": true
 	},
+	// Custom domain (wrangler creates the DNS + cert on deploy). Protected by
+	// Cloudflare Access — set up the Access app BEFORE the first deploy.
+	"routes": [{ "pattern": "md2.example.com", "custom_domain": true }],
+	// Folder config is read-only on Workers (no persistent fs) — seed it here.
+	// An R2 "folder" is a key prefix in the bound bucket.
+	"vars": {
+		"MARKITO_CONFIG_JSON": "{\"folders\":[{\"id\":\"journal\",\"name\":\"Journal\",\"backend\":\"r2\",\"prefix\":\"journal/\"}]}"
+	},
 	// One bound R2 bucket — no credentials needed. R2 "folders" are key prefixes
 	// within it. Create the bucket first:  wrangler r2 bucket create markito
 	"r2_buckets": [
