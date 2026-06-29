@@ -9,7 +9,7 @@ declare global {
 		interface Platform {
 			env?: {
 				BUCKET?: import('@cloudflare/workers-types').R2Bucket;
-				MARKITO_CONFIG_JSON?: string;
+				CONFIG?: import('@cloudflare/workers-types').KVNamespace;
 			};
 		}
 	}

@@ -7,9 +7,7 @@
 	let files: FileEntry[] = $state([]);
 	let addingFolder = $state(false);
 	let folderError = $state('');
-	let folderBackend: 'fs' | 'r2' = $state('fs');
-	let r2Configured = $state(false);
-	let r2Checked = $state(false);
+	let backend: 'fs' | 'r2' = $state('fs'); // this deployment's storage
 	let r2Prefix = $state('');
 	let r2Name = $state('');
 	let selectedPath = $state('');
@@ -71,14 +69,9 @@
 		}
 	}
 
-	async function openAdd() {
+	function openAdd() {
 		addingFolder = !addingFolder;
 		folderError = '';
-		if (addingFolder && !r2Checked) {
-			const res = await fetch('/api/r2/status');
-			if (res.ok) r2Configured = (await res.json()).configured;
-			r2Checked = true;
-		}
 	}
 
 	async function postFolder(body: Record<string, string>): Promise<boolean> {
@@ -98,15 +91,11 @@
 	}
 
 	function pickFsFolder(path: string) {
-		postFolder({ backend: 'fs', path });
+		postFolder({ path });
 	}
 
 	async function addR2() {
-		const ok = await postFolder({
-			backend: 'r2',
-			prefix: r2Prefix.trim(),
-			name: r2Name.trim()
-		});
+		const ok = await postFolder({ prefix: r2Prefix.trim(), name: r2Name.trim() });
 		if (ok) {
 			r2Prefix = '';
 			r2Name = '';
@@ -126,6 +115,9 @@
 
 	onMount(() => {
 		loadTree();
+		fetch('/api/status').then(async (r) => {
+			if (r.ok) backend = (await r.json()).backend;
+		});
 		import('$lib/Editor.svelte').then(m => {
 			Editor = m.default;
 		});
@@ -147,19 +139,13 @@
 		</div>
 		{#if addingFolder}
 			<form class="add-folder" onsubmit={(e) => { e.preventDefault(); addR2(); }}>
-				<div class="backend-toggle">
-					<button type="button" class:active={folderBackend === 'fs'} onclick={() => folderBackend = 'fs'}>Local</button>
-					<button type="button" class:active={folderBackend === 'r2'} onclick={() => folderBackend = 'r2'}>R2</button>
-				</div>
-				{#if folderBackend === 'fs'}
+				{#if backend === 'fs'}
 					<FolderPicker
 						list={(p) => fetch(`/api/fs/list?path=${encodeURIComponent(p)}`).then((r) => r.json())}
 						onpick={pickFsFolder}
 					/>
-				{:else if !r2Configured}
-					<p class="r2-hint">R2 not available on this deployment. The <code>BUCKET</code> binding is Workers-only — deploy with <code>npm run deploy</code>.</p>
 				{:else}
-					<p class="r2-hint">A folder is a key prefix in the bound R2 bucket.</p>
+					<p class="r2-hint">A folder is a key prefix in the R2 bucket.</p>
 					<input type="text" placeholder="prefix/ (optional)" bind:value={r2Prefix} autocomplete="off" spellcheck="false" />
 					<input type="text" placeholder="display name (optional)" bind:value={r2Name} autocomplete="off" spellcheck="false" />
 					<button type="submit" class="add-submit">Add R2 folder</button>
@@ -282,26 +268,6 @@
 		font-family: 'SF Mono', monospace;
 		margin-bottom: 0.4rem;
 	}
-	.backend-toggle {
-		display: flex;
-		gap: 0.25rem;
-		margin-bottom: 0.5rem;
-	}
-	.backend-toggle button {
-		flex: 1;
-		background: #0d1117;
-		border: 1px solid #30363d;
-		color: #8b949e;
-		border-radius: 4px;
-		padding: 0.3rem;
-		font-size: 0.75rem;
-		cursor: pointer;
-	}
-	.backend-toggle button.active {
-		background: rgba(56, 139, 253, 0.15);
-		border-color: #1f6feb;
-		color: #58a6ff;
-	}
 	.add-submit {
 		width: 100%;
 		background: rgba(56, 139, 253, 0.15);
@@ -317,10 +283,6 @@
 		color: #8b949e;
 		margin: 0.25rem 0;
 		line-height: 1.4;
-	}
-	.r2-hint code {
-		color: #c9d1d9;
-		font-size: 0.7rem;
 	}
 	.folder-error {
 		display: block;
