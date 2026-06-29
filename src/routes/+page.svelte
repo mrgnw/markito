@@ -8,9 +8,8 @@
 	let addingFolder = $state(false);
 	let folderError = $state('');
 	let folderBackend: 'fs' | 'r2' = $state('fs');
-	let r2Buckets: string[] = $state([]);
 	let r2Configured = $state(false);
-	let r2Bucket = $state('');
+	let r2Checked = $state(false);
 	let r2Prefix = $state('');
 	let r2Name = $state('');
 	let selectedPath = $state('');
@@ -75,13 +74,10 @@
 	async function openAdd() {
 		addingFolder = !addingFolder;
 		folderError = '';
-		if (addingFolder && r2Buckets.length === 0) {
-			const res = await fetch('/api/r2/buckets');
-			if (res.ok) {
-				const data = await res.json();
-				r2Configured = data.configured;
-				r2Buckets = data.buckets ?? [];
-			}
+		if (addingFolder && !r2Checked) {
+			const res = await fetch('/api/r2/status');
+			if (res.ok) r2Configured = (await res.json()).configured;
+			r2Checked = true;
 		}
 	}
 
@@ -106,18 +102,12 @@
 	}
 
 	async function addR2() {
-		if (!r2Bucket) {
-			folderError = 'pick a bucket';
-			return;
-		}
 		const ok = await postFolder({
 			backend: 'r2',
-			bucket: r2Bucket,
 			prefix: r2Prefix.trim(),
 			name: r2Name.trim()
 		});
 		if (ok) {
-			r2Bucket = '';
 			r2Prefix = '';
 			r2Name = '';
 		}
@@ -167,14 +157,9 @@
 						onpick={pickFsFolder}
 					/>
 				{:else if !r2Configured}
-					<p class="r2-hint">R2 not configured. Set <code>R2_ACCOUNT_ID</code>, <code>R2_ACCESS_KEY_ID</code>, <code>R2_SECRET_ACCESS_KEY</code>.</p>
+					<p class="r2-hint">R2 not available on this deployment. The <code>BUCKET</code> binding is Workers-only — deploy with <code>npm run deploy</code>.</p>
 				{:else}
-					<select bind:value={r2Bucket}>
-						<option value="" disabled>Pick a bucket…</option>
-						{#each r2Buckets as bucket}
-							<option value={bucket}>{bucket}</option>
-						{/each}
-					</select>
+					<p class="r2-hint">A folder is a key prefix in the bound R2 bucket.</p>
 					<input type="text" placeholder="prefix/ (optional)" bind:value={r2Prefix} autocomplete="off" spellcheck="false" />
 					<input type="text" placeholder="display name (optional)" bind:value={r2Name} autocomplete="off" spellcheck="false" />
 					<button type="submit" class="add-submit">Add R2 folder</button>
@@ -285,8 +270,7 @@
 		padding: 0.5rem 1rem;
 		border-bottom: 1px solid #21262d;
 	}
-	.add-folder input,
-	.add-folder select {
+	.add-folder input {
 		width: 100%;
 		box-sizing: border-box;
 		background: #0d1117;

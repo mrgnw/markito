@@ -42,25 +42,19 @@ Only `.md` files are shown and editable. Each file is addressed as `{folderId}/{
 
 ## Storage backends
 
-A folder is backed by either the local filesystem (`fs`) or a Cloudflare R2 bucket (`r2`):
+A folder is backed by either the local filesystem (`fs`) or the bound Cloudflare R2 bucket (`r2`):
 
 ```json
 { "folders": [
   { "id": "notes",   "backend": "fs", "path": "~/notes" },
-  { "id": "journal", "backend": "r2", "bucket": "my-bucket", "prefix": "journal/" }
+  { "id": "journal", "backend": "r2", "prefix": "journal/" }
 ] }
 ```
 
-R2 uses the **S3 API** (so the UI can list and pick any bucket), via these credentials —
-env vars locally, Worker secrets on Cloudflare:
-
-```sh
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-```
-
-In the **+ Add folder** dialog, toggle **R2**, pick a bucket, and (optionally) set a key prefix.
+R2 uses a single **bound bucket** (`env.BUCKET`) — **no credentials**. An R2 "folder" is just
+a key prefix within that bucket; in the **+ Add folder** dialog, toggle **R2** and enter a prefix.
+R2 is **Workers-only** (the binding doesn't exist on the local node build); on the node deploy the
+R2 tab is disabled.
 
 ## Deploy targets
 
@@ -72,7 +66,12 @@ npm run build:cf         # adapter-cloudflare — Workers (R2 folders)
 npm run deploy           # build:cf + wrangler deploy
 ```
 
-On Workers, set the R2 creds as secrets (`wrangler secret put R2_ACCOUNT_ID`, etc.).
+Workers setup — create the bucket once (binding name `BUCKET` is set in `wrangler.jsonc`):
+
+```sh
+wrangler r2 bucket create markito
+```
+
 Folder config on Workers is currently read-only via `MARKITO_CONFIG_JSON` — see
 [todos/r2-workers-config.md](todos/r2-workers-config.md).
 

@@ -9,8 +9,7 @@ export interface Folder {
 	name: string;
 	backend: Backend;
 	path?: string; // fs: absolute directory
-	bucket?: string; // r2: bucket name
-	prefix?: string; // r2: key prefix ('' or ends with '/')
+	prefix?: string; // r2: key prefix in the bound bucket ('' or ends with '/')
 }
 
 interface Config {
@@ -138,24 +137,19 @@ export async function addFsFolder(rawPath: string): Promise<Folder> {
 	return folder;
 }
 
-export async function addR2Folder(bucket: string, prefix = '', name?: string): Promise<Folder> {
+export async function addR2Folder(prefix = '', name?: string): Promise<Folder> {
 	const config = await read();
 	if (config.folders.length >= MAX_FOLDERS) throw new Error('too many folders');
 
-	const label = name?.trim() || (prefix ? `${bucket}/${prefix}` : bucket);
+	const label = name?.trim() || prefix.replace(/\/$/, '') || 'r2';
 	const taken = new Set(config.folders.map((f) => f.id));
 	const folder = normalize({
 		id: uniqueId(slug(label), taken),
 		name: label,
 		backend: 'r2',
-		bucket,
 		prefix
 	});
-	if (
-		config.folders.some(
-			(f) => f.backend === 'r2' && f.bucket === folder.bucket && f.prefix === folder.prefix
-		)
-	) {
+	if (config.folders.some((f) => f.backend === 'r2' && f.prefix === folder.prefix)) {
 		throw new Error('folder already added');
 	}
 	config.folders.push(folder);

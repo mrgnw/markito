@@ -10,7 +10,13 @@
 	},
 	"observability": {
 		"enabled": true
-	}
-	// R2 access uses the S3 API (so the UI can list/pick any bucket), not a binding.
-	// Set these as secrets:  wrangler secret put R2_ACCOUNT_ID  (and KEY_ID / SECRET)
+	},
+	// One bound R2 bucket — no credentials needed. R2 "folders" are key prefixes
+	// within it. Create the bucket first:  wrangler r2 bucket create markito
+	"r2_buckets": [
+		{
+			"binding": "BUCKET",
+			"bucket_name": "markito"
+		}
+	]
 }

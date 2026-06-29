@@ -8,9 +8,7 @@ declare global {
 		// interface PageState {}
 		interface Platform {
 			env?: {
-				R2_ACCOUNT_ID?: string;
-				R2_ACCESS_KEY_ID?: string;
-				R2_SECRET_ACCESS_KEY?: string;
+				BUCKET?: import('@cloudflare/workers-types').R2Bucket;
 				MARKITO_CONFIG_JSON?: string;
 			};
 		}
