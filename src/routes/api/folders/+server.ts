@@ -10,8 +10,7 @@ export async function POST({ request }) {
 	const backend = body.backend === 'r2' ? 'r2' : 'fs';
 	try {
 		if (backend === 'r2') {
-			if (typeof body.bucket !== 'string' || !body.bucket.trim()) throw new Error('bucket required');
-			return json(await addR2Folder(body.bucket.trim(), (body.prefix ?? '').trim(), body.name));
+			return json(await addR2Folder((body.prefix ?? '').trim(), body.name));
 		}
 		if (typeof body.path !== 'string' || !body.path.trim()) throw new Error('path required');
 		return json(await addFsFolder(body.path.trim()));
