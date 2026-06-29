@@ -1,11 +1,13 @@
-import { getFolders, resolveFolder } from './config';
 import { fsTree, fsRead, fsWrite } from './fs';
 import { r2Tree, getObject, putObject } from './r2';
 import type { R2Bucket } from '@cloudflare/workers-types';
+import type { Folder } from './config';
 import type { FileEntry } from '$lib/types';
 
-export async function getFileTree(bucket: R2Bucket | undefined): Promise<FileEntry[]> {
-	const folders = await getFolders();
+export async function getFileTree(
+	folders: Folder[],
+	bucket: R2Bucket | undefined
+): Promise<FileEntry[]> {
 	const roots: FileEntry[] = [];
 	for (const folder of folders) {
 		let children: FileEntry[] = [];
@@ -24,16 +26,17 @@ export async function getFileTree(bucket: R2Bucket | undefined): Promise<FileEnt
 	return roots;
 }
 
-// path is `{folderId}/{relative/path}`
-function split(path: string): { id: string; rel: string } {
+// a file path is `{folderId}/{relative/path}`
+export function splitPath(path: string): { id: string; rel: string } {
 	const i = path.indexOf('/');
 	return i === -1 ? { id: path, rel: '' } : { id: path.slice(0, i), rel: path.slice(i + 1) };
 }
 
-export async function getFileContent(path: string, bucket: R2Bucket | undefined): Promise<string> {
-	const { id, rel } = split(path);
-	const folder = await resolveFolder(id);
-	if (!folder) throw new Error('unknown folder');
+export async function readContent(
+	folder: Folder,
+	rel: string,
+	bucket: R2Bucket | undefined
+): Promise<string> {
 	if (folder.backend === 'r2') {
 		if (!bucket) throw new Error('R2 bucket not bound');
 		return getObject(bucket, (folder.prefix ?? '') + rel);
@@ -41,14 +44,12 @@ export async function getFileContent(path: string, bucket: R2Bucket | undefined)
 	return fsRead(folder, rel);
 }
 
-export async function saveFileContent(
-	path: string,
+export async function writeContent(
+	folder: Folder,
+	rel: string,
 	content: string,
 	bucket: R2Bucket | undefined
 ): Promise<void> {
-	const { id, rel } = split(path);
-	const folder = await resolveFolder(id);
-	if (!folder) throw new Error('unknown folder');
 	if (folder.backend === 'r2') {
 		if (!bucket) throw new Error('R2 bucket not bound');
 		return putObject(bucket, (folder.prefix ?? '') + rel, content);

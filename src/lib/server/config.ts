@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, dirname, basename, resolve } from 'node:path';
+import type { KVNamespace } from '@cloudflare/workers-types';
 
 export type Backend = 'fs' | 'r2';
 
@@ -18,9 +19,40 @@ interface Config {
 
 const MAX_FOLDERS = 64;
 
-const configPath =
+const fsConfigPath =
 	process.env.MARKITO_CONFIG ??
 	join(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'), 'markito', 'config.json');
+
+// ---------- persistence backends ----------
+
+async function fsLoad(): Promise<Config> {
+	try {
+		return JSON.parse(await readFile(fsConfigPath, 'utf-8'));
+	} catch {
+		return { folders: [] };
+	}
+}
+
+async function fsSave(config: Config): Promise<void> {
+	await mkdir(dirname(fsConfigPath), { recursive: true });
+	await writeFile(fsConfigPath, JSON.stringify(config, null, 2), 'utf-8');
+}
+
+async function kvLoad(kv: KVNamespace): Promise<Config> {
+	const raw = await kv.get('config');
+	if (!raw) return { folders: [] };
+	try {
+		return JSON.parse(raw);
+	} catch {
+		return { folders: [] };
+	}
+}
+
+async function kvSave(kv: KVNamespace, config: Config): Promise<void> {
+	await kv.put('config', JSON.stringify(config));
+}
+
+// ---------- helpers ----------
 
 function normalize(folder: Folder): Folder {
 	const backend: Backend = folder.backend ?? 'fs';
@@ -32,32 +64,6 @@ function normalize(folder: Folder): Folder {
 	return { ...folder, backend };
 }
 
-async function read(): Promise<Config> {
-	// Workers have no local filesystem — seed read-only folders from env JSON.
-	// (UI-managed persistence on Workers is a follow-up; see todos/r2-workers-config.md)
-	if (process.env.MARKITO_CONFIG_JSON) {
-		try {
-			const parsed = JSON.parse(process.env.MARKITO_CONFIG_JSON) as Config;
-			if (Array.isArray(parsed.folders)) return { folders: parsed.folders.map(normalize) };
-		} catch {
-			/* fall through to file */
-		}
-	}
-	try {
-		const raw = await readFile(configPath, 'utf-8');
-		const parsed = JSON.parse(raw) as Config;
-		if (!Array.isArray(parsed.folders)) return { folders: [] };
-		return { folders: parsed.folders.map(normalize) };
-	} catch {
-		return { folders: [] };
-	}
-}
-
-async function write(config: Config): Promise<void> {
-	await mkdir(dirname(configPath), { recursive: true });
-	await writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
-}
-
 function slug(name: string): string {
 	return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'folder';
 }
@@ -65,8 +71,7 @@ function slug(name: string): string {
 function uniqueId(base: string, taken: Set<string>): string {
 	if (!taken.has(base)) return base;
 	for (let i = 2; i < MAX_FOLDERS + 2; i++) {
-		const candidate = `${base}-${i}`;
-		if (!taken.has(candidate)) return candidate;
+		if (!taken.has(`${base}-${i}`)) return `${base}-${i}`;
 	}
 	throw new Error('too many folders');
 }
@@ -76,16 +81,14 @@ async function assertDir(path: string): Promise<void> {
 	if (!info.isDirectory()) throw new Error('not a directory');
 }
 
-// Seed fs folders passed via `--folder` CLI flags (set by bin as MARKITO_FOLDERS,
-// newline-separated absolute paths). Added on startup if not already present.
-async function withSeeds(config: Config): Promise<Config> {
+// Seed fs folders from `--folder` CLI flags (set by bin as MARKITO_FOLDERS).
+// node/fs deployment only. Returns true if it added any.
+async function applySeeds(config: Config): Promise<boolean> {
 	const seeds = (process.env.MARKITO_FOLDERS ?? '').split('\n').map((s) => s.trim()).filter(Boolean);
-	if (seeds.length === 0) return config;
-
+	if (!seeds.length) return false;
 	const existing = new Set(config.folders.filter((f) => f.backend === 'fs').map((f) => f.path));
 	const taken = new Set(config.folders.map((f) => f.id));
 	let changed = false;
-
 	for (const raw of seeds) {
 		const path = resolve(raw);
 		if (existing.has(path)) continue;
@@ -100,65 +103,78 @@ async function withSeeds(config: Config): Promise<Config> {
 		config.folders.push({ id, name: basename(path), backend: 'fs', path });
 		changed = true;
 	}
-
-	if (changed) await write(config);
-	return config;
+	return changed;
 }
 
-export async function getFolders(): Promise<Folder[]> {
-	const config = await withSeeds(await read());
-	return config.folders;
+// ---------- store ----------
+
+export interface MarkitoStore {
+	readonly kind: Backend;
+	getFolders(): Promise<Folder[]>;
+	resolveFolder(id: string): Promise<Folder | null>;
+	addFolder(input: { path?: string; prefix?: string; name?: string }): Promise<Folder>;
+	removeFolder(id: string): Promise<void>;
 }
 
-export async function resolveFolder(id: string): Promise<Folder | null> {
-	const folders = await getFolders();
-	return folders.find((f) => f.id === id) ?? null;
-}
-
-export async function addFsFolder(rawPath: string): Promise<Folder> {
-	const path = resolve(rawPath);
-	await assertDir(path);
-
-	const config = await read();
-	if (config.folders.length >= MAX_FOLDERS) throw new Error('too many folders');
-	if (config.folders.some((f) => f.backend === 'fs' && f.path === path)) {
-		throw new Error('folder already added');
+function makeStore(
+	kind: Backend,
+	load: () => Promise<Config>,
+	save: (c: Config) => Promise<void>,
+	seed: boolean
+): MarkitoStore {
+	async function read(): Promise<Config> {
+		const config = await load();
+		if (!Array.isArray(config.folders)) return { folders: [] };
+		config.folders = config.folders.map(normalize);
+		if (seed && (await applySeeds(config))) await save(config);
+		return config;
 	}
 
-	const taken = new Set(config.folders.map((f) => f.id));
-	const folder: Folder = {
-		id: uniqueId(slug(basename(path)), taken),
-		name: basename(path),
-		backend: 'fs',
-		path
+	return {
+		kind,
+		async getFolders() {
+			return (await read()).folders;
+		},
+		async resolveFolder(id) {
+			return (await read()).folders.find((f) => f.id === id) ?? null;
+		},
+		async addFolder(input) {
+			const config = await read();
+			if (config.folders.length >= MAX_FOLDERS) throw new Error('too many folders');
+			const taken = new Set(config.folders.map((f) => f.id));
+			let folder: Folder;
+			if (kind === 'fs') {
+				if (!input.path?.trim()) throw new Error('path required');
+				const path = resolve(input.path.trim());
+				await assertDir(path);
+				if (config.folders.some((f) => f.backend === 'fs' && f.path === path)) {
+					throw new Error('folder already added');
+				}
+				folder = { id: uniqueId(slug(basename(path)), taken), name: basename(path), backend: 'fs', path };
+			} else {
+				const { prefix } = normalize({ id: '', name: '', backend: 'r2', prefix: input.prefix ?? '' });
+				if (config.folders.some((f) => f.backend === 'r2' && f.prefix === prefix)) {
+					throw new Error('folder already added');
+				}
+				const label = input.name?.trim() || (prefix ?? '').replace(/\/$/, '') || 'r2';
+				folder = { id: uniqueId(slug(label), taken), name: label, backend: 'r2', prefix };
+			}
+			config.folders.push(folder);
+			await save(config);
+			return folder;
+		},
+		async removeFolder(id) {
+			const config = await read();
+			config.folders = config.folders.filter((f) => f.id !== id);
+			await save(config);
+		}
 	};
-	config.folders.push(folder);
-	await write(config);
-	return folder;
 }
 
-export async function addR2Folder(prefix = '', name?: string): Promise<Folder> {
-	const config = await read();
-	if (config.folders.length >= MAX_FOLDERS) throw new Error('too many folders');
-
-	const label = name?.trim() || prefix.replace(/\/$/, '') || 'r2';
-	const taken = new Set(config.folders.map((f) => f.id));
-	const folder = normalize({
-		id: uniqueId(slug(label), taken),
-		name: label,
-		backend: 'r2',
-		prefix
-	});
-	if (config.folders.some((f) => f.backend === 'r2' && f.prefix === folder.prefix)) {
-		throw new Error('folder already added');
-	}
-	config.folders.push(folder);
-	await write(config);
-	return folder;
-}
-
-export async function removeFolder(id: string): Promise<void> {
-	const config = await read();
-	config.folders = config.folders.filter((f) => f.id !== id);
-	await write(config);
+// fs on node; KV on Workers (whichever binding exists). This is the single
+// switch between the two deployment "adapters".
+export function configStore(platform: App.Platform | undefined): MarkitoStore {
+	const kv = platform?.env?.CONFIG;
+	if (kv) return makeStore('r2', () => kvLoad(kv), (c) => kvSave(kv, c), false);
+	return makeStore('fs', fsLoad, fsSave, true);
 }
