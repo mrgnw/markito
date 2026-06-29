@@ -5,7 +5,11 @@ export async function GET() {
 	return json(await getFolders());
 }
 
-export async function POST({ request }) {
+export async function POST({ request, platform }) {
+	// On Workers there's no persistent filesystem — config is read-only
+	// (seeded via MARKITO_CONFIG_JSON). Reject rather than silently no-op into
+	// the ephemeral in-memory fs. See todos/r2-workers-config.md.
+	if (platform) throw error(405, 'folder config is read-only on this deployment');
 	const body = await request.json();
 	const backend = body.backend === 'r2' ? 'r2' : 'fs';
 	try {
