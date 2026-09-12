@@ -63,7 +63,7 @@ Two builds from one codebase (conditional adapter in `svelte.config.js`):
 ```sh
 npm run build            # adapter-node  — local fs folders (the md.example.com service)
 npm run build:cf         # adapter-cloudflare — Workers (R2 folders)
-npm run deploy           # build:cf + wrangler deploy
+pnpm ship           # build:cf + wrangler deploy
 ```
 
 Workers setup — create the bucket once (binding name `BUCKET` is set in `wrangler.jsonc`):

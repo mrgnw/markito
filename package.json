@@ -16,7 +16,7 @@
 		"build:cf": "ADAPTER=cloudflare vite build",
 		"start": "node build",
 		"preview": "vite preview",
-		"deploy": "ADAPTER=cloudflare vite build && wrangler deploy",
+		"ship": "ADAPTER=cloudflare vite build && wrangler deploy",
 		"test": "bun scripts/test-buildtree.ts && bun scripts/test-config-store.ts",
 		"prepare": "svelte-kit sync || echo ''",
 		"prepublishOnly": "vite build",
