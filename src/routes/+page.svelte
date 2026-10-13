@@ -12,7 +12,8 @@
 	let r2Name = $state('');
 	let selectedPath = $state('');
 	let editorContent = $state('');
-	let editorKey = $state('');
+	// A new object per load, so reopening a file with unchanged text still reaches the editor.
+	let loaded = $state({ text: '' });
 	let dirty = $state(false);
 	let saving = $state(false);
 	let statusMessage = $state('');
@@ -32,8 +33,8 @@
 		const res = await fetch(`/api/files/${path}`);
 		const data = await res.json();
 		editorContent = data.content;
+		loaded = { text: data.content };
 		selectedPath = path;
-		editorKey = path;
 		dirty = false;
 		statusMessage = '';
 		sidebarOpen = false;
@@ -183,9 +184,8 @@
 			<div class="editor-area">
 				{#if Editor}
 					<Editor
-						content={editorContent}
+						source={loaded.text}
 						onchange={handleChange}
-						key={editorKey}
 					/>
 				{/if}
 			</div>

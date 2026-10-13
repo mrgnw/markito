@@ -36,9 +36,7 @@
 		"wrangler": "^4.105.0"
 	},
 	"dependencies": {
-		"@milkdown/crepe": "^7.20.0",
-		"@milkdown/kit": "^7.20.0",
-		"@milkdown/plugin-listener": "^7.20.0",
-		"@sveltejs/adapter-node": "^5.5.4"
+		"@sveltejs/adapter-node": "^5.5.4",
+		"@voithos-labs/aragonite": "0.10.10"
 	}
 }
