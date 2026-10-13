@@ -82,7 +82,7 @@ pnpm install
 pnpm dev          # http://localhost:5179
 pnpm build        # production build → build/
 node build        # run the production server
-uv run scripts/check-roundtrip.py  # saved bytes = original + typed text (needs a build)
+pnpm test         # unit tests, then a build and a browser check that saving keeps the file's bytes
 ```
 
 ## Roadmap

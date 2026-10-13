@@ -2,8 +2,9 @@
 # requires-python = ">=3.14"
 # dependencies = ["playwright"]
 # ///
-# Opens files in the built app (`bun run build` first), types at the end of one, and checks the
-# saved bytes are the original plus only what was typed. Milkdown rewrote these; Aragonite must not.
+# Run with `bun run test:roundtrip`, which builds first. Opens files in the built app, types at
+# the end of one, and checks the saved bytes are the original plus only what was typed.
+# Milkdown rewrote these; Aragonite must not.
 import os
 import subprocess
 import tempfile
