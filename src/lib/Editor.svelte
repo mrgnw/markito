@@ -60,6 +60,11 @@
 		flex: 1;
 		min-height: 0;
 	}
+	/* The inset sits on the editor itself so clicks in the side margins still place the caret. */
+	.editor-host > :global(.editor) {
+		box-sizing: border-box;
+		padding-inline: max(1.5rem, calc((100% - 48rem) / 2));
+	}
 
 	@media (max-width: 640px) {
 		.editor-host {
