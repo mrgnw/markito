@@ -32,7 +32,7 @@
 		{source}
 		{plugins}
 		theme="light"
-		presentationMode="live"
+		presentationMode="preview-inline"
 		placeholder="Start typing…"
 	/>
 </div>

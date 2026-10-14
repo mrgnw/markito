@@ -11,6 +11,8 @@
 
 ### UX
 
+- The editor opens in preview-inline mode: markers hidden, shown back in the construct at the caret, always editable.
+
 - The open file lives in the URL as `?f=`, so reloads and deep links keep it open. (#6)
 - The tree row and filename update the moment a file is clicked. (#6)
 - The editor gains focus when a file opens. (#6)
