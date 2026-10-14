@@ -18,6 +18,8 @@
 	let editorContent = $derived(data.content);
 	// A new object per load, so reopening a file with unchanged text still reaches the editor.
 	let loaded = $derived({ text: data.content });
+	let openPath = $derived(data.selected);
+	let loadSeq = 0;
 	let dirty = $state(false);
 	let saving = $state(false);
 	let statusMessage = $state('');
@@ -38,29 +40,31 @@
 	}
 
 	async function loadFile(path: string) {
-		if (dirty && selectedPath) {
-			await save();
-		}
-		const res = await fetch(`/api/files/${path}`);
-		const data = await res.json();
-		editorContent = data.content;
-		loaded = { text: data.content };
+		const seq = ++loadSeq;
 		selectedPath = path;
 		setFileParam(path);
+		sidebarOpen = false;
+		if (path === openPath) return;
+		const [, res] = await Promise.all([dirty ? save() : null, fetch(`/api/files/${path}`)]);
+		const { content } = await res.json();
+		if (seq !== loadSeq) return;
+		if (dirty) save();
+		openPath = path;
+		editorContent = content;
+		loaded = { text: content };
 		dirty = false;
 		statusMessage = '';
-		sidebarOpen = false;
 	}
 
 	async function save() {
-		if (!selectedPath) return;
+		if (!openPath) return;
 		saving = true;
-		await fetch(`/api/files/${selectedPath}`, {
+		dirty = false;
+		await fetch(`/api/files/${openPath}`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ content: editorContent })
 		});
-		dirty = false;
 		saving = false;
 		statusMessage = 'Saved';
 		setTimeout(() => {
@@ -118,7 +122,9 @@
 	async function removeFolder(id: string) {
 		await fetch(`/api/folders/${id}`, { method: 'DELETE' });
 		if (selectedPath === id || selectedPath.startsWith(`${id}/`)) {
+			loadSeq++;
 			selectedPath = '';
+			openPath = '';
 			editorContent = '';
 			setFileParam('');
 		}
