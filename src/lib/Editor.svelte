@@ -45,10 +45,9 @@
 		min-width: 0;
 		display: flex;
 		flex-direction: column;
-		--font-editor: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+		--font-editor: var(--font-prose);
 		--font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-		--font-code: ui-monospace, 'SFMono-Regular', Menlo, monospace;
-		--editor-font-size: 15px;
+		--editor-font-size: 16px;
 		--radius-ui: 4px;
 		--radius-surface: 6px;
 		--color-bg: #ffffff;

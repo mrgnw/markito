@@ -329,7 +329,7 @@
 		color: #c9d1d9;
 		padding: 0.35rem 0.5rem;
 		font-size: 0.8rem;
-		font-family: 'SF Mono', monospace;
+		font-family: var(--font-code);
 		margin-bottom: 0.4rem;
 	}
 	.add-submit {
@@ -395,7 +395,7 @@
 	.filepath {
 		font-size: 0.8rem;
 		color: #8b949e;
-		font-family: 'SF Mono', monospace;
+		font-family: var(--font-code);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;

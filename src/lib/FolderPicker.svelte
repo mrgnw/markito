@@ -115,14 +115,14 @@
 		color: #c9d1d9;
 		padding: 0.35rem 0.5rem;
 		font-size: 0.8rem;
-		font-family: 'SF Mono', monospace;
+		font-family: var(--font-code);
 	}
 	.crumbs {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 0.15rem;
-		font-family: 'SF Mono', monospace;
+		font-family: var(--font-code);
 		font-size: 0.72rem;
 		color: #6e7681;
 	}
@@ -205,6 +205,6 @@
 		margin: 0;
 	}
 	.mono {
-		font-family: 'SF Mono', monospace;
+		font-family: var(--font-code);
 	}
 </style>
