@@ -64,7 +64,7 @@
 	}
 
 	function prefetch(path: string) {
-		if (matchMedia('(hover: hover)').matches) fetchContent(path);
+		if (path !== openPath && matchMedia('(hover: hover)').matches) fetchContent(path);
 	}
 
 	async function loadFile(path: string) {
@@ -92,6 +92,7 @@
 		if (!openPath || !dirty) return;
 		pendingSaves++;
 		dirty = false;
+		contentCache.delete(openPath);
 		try {
 			await fetch(fileUrl(openPath), {
 				method: 'PUT',
