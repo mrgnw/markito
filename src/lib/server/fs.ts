@@ -21,7 +21,6 @@ async function treeOf(
 		await Promise.all(
 			entries.map(async (entry): Promise<FileEntry | null> => {
 				if (entry.name.startsWith('.') || entry.name === 'node_modules') return null;
-				if (entry.isSymbolicLink()) return null;
 
 				const fullPath = join(dir, entry.name);
 				const relPath = `${prefix}/${relative(root, fullPath)}`;
