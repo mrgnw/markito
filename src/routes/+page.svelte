@@ -32,6 +32,10 @@
 		files = await res.json();
 	}
 
+	function fileUrl(path: string) {
+		return `/api/files/${path.split('/').map(encodeURIComponent).join('/')}`;
+	}
+
 	function setFileParam(path: string) {
 		const url = new URL(page.url);
 		if (path) url.searchParams.set('f', path);
@@ -45,7 +49,7 @@
 		setFileParam(path);
 		sidebarOpen = false;
 		if (path === openPath) return;
-		const [, res] = await Promise.all([dirty ? save() : null, fetch(`/api/files/${path}`)]);
+		const [, res] = await Promise.all([dirty ? save() : null, fetch(fileUrl(path))]);
 		const { content } = await res.json();
 		if (seq !== loadSeq) return;
 		if (dirty) save();
@@ -60,7 +64,7 @@
 		if (!openPath) return;
 		saving = true;
 		dirty = false;
-		await fetch(`/api/files/${openPath}`, {
+		await fetch(fileUrl(openPath), {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ content: editorContent })
