@@ -20,6 +20,8 @@
 - Fade and slide transitions on status glyphs, the mobile overlay, the add-folder form and tree collapse. Disabled under `prefers-reduced-motion`. (#7)
 - Collapsing a parent folder no longer forgets which children were collapsed. (#7)
 
+- `GET /version` reports the package version, git commit and build time of the running server. (#9)
+
 ### Fixes
 
 - Filenames containing `#`, `%` or `?` now open and save. (#6)

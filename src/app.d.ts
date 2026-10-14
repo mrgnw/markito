@@ -13,6 +13,7 @@ declare global {
 			};
 		}
 	}
+	const __VERSION__: { version: string; commit: string; built: string };
 }
 
 export {};
