@@ -24,6 +24,8 @@
 
 ### Fixes
 
+- The caret was invisible: Aragonite's theme stylesheet, which sizes and colours the drawn caret, was never loaded. (#10)
+
 - Filenames containing `#`, `%` or `?` now open and save. (#6)
 - Leaving the page with unsaved edits asks for confirmation. (#6)
 - Autosave could write the previous file's text under the newly opened file's name. (#6)

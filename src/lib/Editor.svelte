@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Editor, type EditorInstance } from '@voithos-labs/aragonite';
+	import '@voithos-labs/aragonite/styles/editor-theme.css';
 	import { detailsPlugin } from '@voithos-labs/aragonite/plugins/details';
 	import { footnotesPlugin } from '@voithos-labs/aragonite/plugins/footnotes';
 	import { slashCommandsPlugin } from '@voithos-labs/aragonite/plugins/slash-commands';
