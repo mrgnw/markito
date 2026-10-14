@@ -11,6 +11,7 @@ import tempfile
 import time
 import urllib.request
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 from playwright.sync_api import sync_playwright
 
@@ -41,6 +42,7 @@ __bold__ and *em* and <kbd>html</kbd>
 [r]: https://example.com
 Last line"""
 OTHER = '# Other\n\nSecond file.\n'
+HASHED = '# Hashed\n\nA name with a hash.\n'
 
 
 def wait_for_server():
@@ -61,6 +63,7 @@ def main():
 	other = notes / 'other.md'
 	tricky.write_text(TRICKY)
 	other.write_text(OTHER)
+	(notes / 'a#b.md').write_text(HASHED)
 	env = {
 		**os.environ,
 		'PORT': str(PORT),
@@ -71,11 +74,19 @@ def main():
 	server = subprocess.Popen(['node', str(ROOT / 'build')], env=env)
 	try:
 		wait_for_server()
+		html = urllib.request.urlopen(f'http://127.0.0.1:{PORT}').read().decode()
+		assert 'other.md' in html, 'file tree is missing from the server-rendered HTML'
 		with sync_playwright() as p:
 			page = p.chromium.launch().new_page()
 			page.goto(f'http://127.0.0.1:{PORT}')
 			page.get_by_role('button', name='other.md').click()
 			page.get_by_text('Second file.').wait_for()
+			assert parse_qs(urlparse(page.url).query)['f'] == ['notes/other.md'], page.url
+			page.wait_for_function('() => document.activeElement?.closest(".editor-host")')
+			page.reload()
+			page.get_by_text('Second file.').wait_for()
+			page.get_by_role('button', name='a#b.md').click()
+			page.get_by_text('A name with a hash.').wait_for()
 			page.get_by_role('button', name='tricky.md').click()
 			page.get_by_text('Last line').click()
 			page.keyboard.press('End')
@@ -87,6 +98,7 @@ def main():
 		saved = tricky.read_text()
 		assert saved == TRICKY + TYPED, f'saved bytes differ:\n{saved!r}'
 		assert other.read_text() == OTHER, 'opening a file without editing rewrote it'
+		assert (notes / 'a#b.md').read_text() == HASHED, 'opening a file without editing rewrote it'
 		print('round trip: saved bytes are the original plus the typed text')
 	finally:
 		server.terminate()
