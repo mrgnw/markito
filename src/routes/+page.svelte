@@ -7,6 +7,8 @@
 	import { onMount, tick } from 'svelte';
 	import { replaceState } from '$app/navigation';
 	import { page } from '$app/state';
+	import { fade, slide } from 'svelte/transition';
+	import { ms } from '$lib/motion';
 	import FileTree from '$lib/FileTree.svelte';
 	import FolderPicker from '$lib/FolderPicker.svelte';
 	import type { FileEntry } from '$lib/types';
@@ -183,7 +185,7 @@
 <div class="layout">
 	<!-- Mobile overlay -->
 	{#if sidebarOpen}
-		<button class="overlay" onclick={() => sidebarOpen = false}></button>
+		<button class="overlay" transition:fade={{ duration: ms(150) }} onclick={() => sidebarOpen = false}></button>
 	{/if}
 
 	<aside class="sidebar" class:open={sidebarOpen}>
@@ -192,7 +194,7 @@
 			<button class="add-btn" title="Add folder" onclick={openAdd}>+</button>
 		</div>
 		{#if addingFolder}
-			<form class="add-folder" onsubmit={(e) => { e.preventDefault(); addR2(); }}>
+			<form class="add-folder" transition:slide={{ duration: ms(150) }} onsubmit={(e) => { e.preventDefault(); addR2(); }}>
 				{#if backend === 'fs'}
 					<FolderPicker
 						list={(p) => fetch(`/api/fs/list?path=${encodeURIComponent(p)}`).then((r) => r.json())}
@@ -204,7 +206,7 @@
 					<input type="text" placeholder="display name (optional)" bind:value={r2Name} autocomplete="off" spellcheck="false" />
 					<button type="submit" class="add-submit">Add R2 folder</button>
 				{/if}
-				{#if folderError}<span class="folder-error">{folderError}</span>{/if}
+				{#if folderError}<span class="folder-error" transition:fade={{ duration: ms(120) }}>{folderError}</span>{/if}
 			</form>
 		{/if}
 		<nav class="file-nav">
@@ -227,10 +229,10 @@
 			<span class="filepath">{filename}</span>
 			<div class="toolbar-right">
 				{#if statusMessage}
-					<span class="status">✓</span>
+					<span class="status" transition:fade={{ duration: ms(120) }}>✓</span>
 				{/if}
 				{#if dirty}
-					<span class="unsaved">●</span>
+					<span class="unsaved" transition:fade={{ duration: ms(120) }}>●</span>
 				{/if}
 			</div>
 		</header>

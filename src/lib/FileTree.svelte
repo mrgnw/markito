@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { slide } from 'svelte/transition';
+	import { ms } from './motion';
 	import type { FileEntry } from './types';
 
 	let {
@@ -38,13 +40,15 @@
 					{/if}
 				</div>
 				{#if !collapsed[entry.path] && entry.children}
-					<svelte:self
-						entries={entry.children}
-						{selected}
-						{onselect}
-						{onhover}
-						depth={depth + 1}
-					/>
+					<div transition:slide={{ duration: ms(120) }}>
+						<svelte:self
+							entries={entry.children}
+							{selected}
+							{onselect}
+							{onhover}
+							depth={depth + 1}
+						/>
+					</div>
 				{/if}
 			{:else}
 				<button
