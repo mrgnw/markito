@@ -9,6 +9,7 @@
 		onselect,
 		onremove,
 		onhover,
+		collapsed = $bindable({}),
 		depth = 0
 	}: {
 		entries: FileEntry[];
@@ -16,10 +17,9 @@
 		onselect?: (path: string) => void;
 		onremove?: (id: string) => void;
 		onhover?: (path: string) => void;
+		collapsed?: Record<string, boolean>;
 		depth?: number;
 	} = $props();
-
-	let collapsed: Record<string, boolean> = $state({});
 
 	function toggle(path: string) {
 		collapsed[path] = !collapsed[path];
@@ -46,6 +46,7 @@
 							{selected}
 							{onselect}
 							{onhover}
+							bind:collapsed
 							depth={depth + 1}
 						/>
 					</div>
