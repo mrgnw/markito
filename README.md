@@ -1,6 +1,6 @@
 # markito
 
-Edit your local markdown files in the browser. Run it locally, point it at one or more folders, edit with a clean WYSIWYG editor (autosaves to disk).
+Edit your local markdown files in the browser. Run it locally, point it at one or more folders, edit with a clean WYSIWYG editor ([Aragonite](https://github.com/voithos-labs/aragonite), autosaves to disk). Saving writes back the file as it was plus your edits; formatting you did not touch is left alone.
 
 > [!NOTE]
 > This project was built with heavy LLM assistance and should be considered proof-of-concept. Contributions are welcome, but I can't guarantee the accuracy of the code or that I will continue to maintain it. If there are any mistakes in attribution or anything else, please let me know.
@@ -82,6 +82,7 @@ pnpm install
 pnpm dev          # http://localhost:5179
 pnpm build        # production build → build/
 node build        # run the production server
+pnpm test         # unit tests, then a build and a browser check that saving keeps the file's bytes
 ```
 
 ## Roadmap

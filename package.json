@@ -17,7 +17,8 @@
 		"start": "node build",
 		"preview": "vite preview",
 		"ship": "ADAPTER=cloudflare vite build && wrangler deploy",
-		"test": "bun scripts/test-buildtree.ts && bun scripts/test-config-store.ts",
+		"test": "bun scripts/test-buildtree.ts && bun scripts/test-config-store.ts && bun run test:roundtrip",
+		"test:roundtrip": "vite build && uv run scripts/check-roundtrip.py",
 		"prepare": "svelte-kit sync || echo ''",
 		"prepublishOnly": "vite build",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -36,9 +37,7 @@
 		"wrangler": "^4.105.0"
 	},
 	"dependencies": {
-		"@milkdown/crepe": "^7.20.0",
-		"@milkdown/kit": "^7.20.0",
-		"@milkdown/plugin-listener": "^7.20.0",
-		"@sveltejs/adapter-node": "^5.5.4"
+		"@sveltejs/adapter-node": "^5.5.4",
+		"@voithos-labs/aragonite": "0.10.10"
 	}
 }
