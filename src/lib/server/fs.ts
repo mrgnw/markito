@@ -3,27 +3,42 @@ import { join, relative, resolve, sep } from 'node:path';
 import type { FileEntry } from '$lib/types';
 import type { Folder } from './config';
 
-async function treeOf(dir: string, root: string, prefix: string): Promise<FileEntry[]> {
+const MAX_DEPTH = 32;
+const MAX_ENTRIES = 20000;
+
+async function treeOf(
+	dir: string,
+	root: string,
+	prefix: string,
+	depth: number,
+	budget: { left: number }
+): Promise<FileEntry[]> {
+	if (depth > MAX_DEPTH || budget.left <= 0) return [];
 	const entries = await readdir(dir, { withFileTypes: true });
-	const result: FileEntry[] = [];
+	budget.left -= entries.length;
 
-	for (const entry of entries) {
-		if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+	const result = (
+		await Promise.all(
+			entries.map(async (entry): Promise<FileEntry | null> => {
+				if (entry.name.startsWith('.') || entry.name === 'node_modules') return null;
+				if (entry.isSymbolicLink()) return null;
 
-		const fullPath = join(dir, entry.name);
-		const relPath = `${prefix}/${relative(root, fullPath)}`;
+				const fullPath = join(dir, entry.name);
+				const relPath = `${prefix}/${relative(root, fullPath)}`;
 
-		if (entry.isDirectory()) {
-			result.push({
-				name: entry.name,
-				path: relPath,
-				type: 'directory',
-				children: await treeOf(fullPath, root, prefix)
-			});
-		} else if (entry.name.endsWith('.md')) {
-			result.push({ name: entry.name, path: relPath, type: 'file' });
-		}
-	}
+				if (entry.isDirectory()) {
+					return {
+						name: entry.name,
+						path: relPath,
+						type: 'directory',
+						children: await treeOf(fullPath, root, prefix, depth + 1, budget)
+					};
+				}
+				if (entry.name.endsWith('.md')) return { name: entry.name, path: relPath, type: 'file' };
+				return null;
+			})
+		)
+	).filter((e) => e !== null);
 
 	result.sort((a, b) => {
 		if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
@@ -33,7 +48,7 @@ async function treeOf(dir: string, root: string, prefix: string): Promise<FileEn
 }
 
 export async function fsTree(folder: Folder): Promise<FileEntry[]> {
-	return treeOf(folder.path!, folder.path!, folder.id);
+	return treeOf(folder.path!, folder.path!, folder.id, 0, { left: MAX_ENTRIES });
 }
 
 // resolve a relative path inside the folder root, guarding against traversal
