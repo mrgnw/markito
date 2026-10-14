@@ -1,3 +1,8 @@
+<script module lang="ts">
+	const CACHE_LIMIT = 20;
+	const contentCache = new Map<string, Promise<string>>();
+</script>
+
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { replaceState } from '$app/navigation';
@@ -44,15 +49,31 @@
 		replaceState(url, page.state);
 	}
 
+	function fetchContent(path: string): Promise<string> {
+		const cached = contentCache.get(path);
+		if (cached) return cached;
+		const pending = fetch(fileUrl(path))
+			.then((res) => res.json())
+			.then((body) => body.content as string);
+		pending.catch(() => contentCache.delete(path));
+		contentCache.set(path, pending);
+		if (contentCache.size > CACHE_LIMIT) contentCache.delete(contentCache.keys().next().value!);
+		return pending;
+	}
+
+	function prefetch(path: string) {
+		if (matchMedia('(hover: hover)').matches) fetchContent(path);
+	}
+
 	async function loadFile(path: string) {
 		const seq = ++loadSeq;
 		selectedPath = path;
 		setFileParam(path);
 		sidebarOpen = false;
 		if (path === openPath) return;
-		const [, res] = await Promise.all([save(), fetch(fileUrl(path))]);
-		const { content } = await res.json();
+		const [, content] = await Promise.all([save(), fetchContent(path)]);
 		if (seq !== loadSeq) return;
+		contentCache.delete(path);
 		save();
 		openPath = path;
 		editorContent = content;
@@ -194,6 +215,7 @@
 				entries={files}
 				selected={selectedPath}
 				onselect={loadFile}
+				onhover={prefetch}
 				onremove={removeFolder}
 			/>
 		</nav>

@@ -6,12 +6,14 @@
 		selected = '',
 		onselect,
 		onremove,
+		onhover,
 		depth = 0
 	}: {
 		entries: FileEntry[];
 		selected?: string;
 		onselect?: (path: string) => void;
 		onremove?: (id: string) => void;
+		onhover?: (path: string) => void;
 		depth?: number;
 	} = $props();
 
@@ -40,6 +42,7 @@
 						entries={entry.children}
 						{selected}
 						{onselect}
+						{onhover}
 						depth={depth + 1}
 					/>
 				{/if}
@@ -48,6 +51,7 @@
 					class="file"
 					class:active={selected === entry.path}
 					onclick={() => onselect?.(entry.path)}
+					onmouseenter={() => onhover?.(entry.path)}
 				>
 					{entry.name}
 				</button>
