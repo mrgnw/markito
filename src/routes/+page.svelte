@@ -21,7 +21,7 @@
 	let openPath = $derived(data.selected);
 	let loadSeq = 0;
 	let dirty = $state(false);
-	let saving = $state(false);
+	let pendingSaves = 0;
 	let statusMessage = $state('');
 	let Editor: any = $state(null);
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -49,10 +49,10 @@
 		setFileParam(path);
 		sidebarOpen = false;
 		if (path === openPath) return;
-		const [, res] = await Promise.all([dirty ? save() : null, fetch(fileUrl(path))]);
+		const [, res] = await Promise.all([save(), fetch(fileUrl(path))]);
 		const { content } = await res.json();
 		if (seq !== loadSeq) return;
-		if (dirty) save();
+		save();
 		openPath = path;
 		editorContent = content;
 		loaded = { text: content };
@@ -61,15 +61,20 @@
 	}
 
 	async function save() {
-		if (!openPath) return;
-		saving = true;
+		if (saveTimer) clearTimeout(saveTimer);
+		saveTimer = null;
+		if (!openPath || !dirty) return;
+		pendingSaves++;
 		dirty = false;
-		await fetch(fileUrl(openPath), {
-			method: 'PUT',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ content: editorContent })
-		});
-		saving = false;
+		try {
+			await fetch(fileUrl(openPath), {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ content: editorContent })
+			});
+		} finally {
+			pendingSaves--;
+		}
 		statusMessage = 'Saved';
 		setTimeout(() => {
 			if (statusMessage === 'Saved') statusMessage = '';
@@ -144,7 +149,12 @@
 	});
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window
+	onkeydown={handleKeydown}
+	onbeforeunload={(e) => {
+		if (dirty || pendingSaves > 0) e.preventDefault();
+	}}
+/>
 
 <div class="layout">
 	<!-- Mobile overlay -->
