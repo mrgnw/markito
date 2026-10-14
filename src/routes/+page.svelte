@@ -4,10 +4,12 @@
 	import FolderPicker from '$lib/FolderPicker.svelte';
 	import type { FileEntry } from '$lib/types';
 
-	let files: FileEntry[] = $state([]);
+	let { data } = $props();
+
+	let files: FileEntry[] = $derived(data.files);
 	let addingFolder = $state(false);
 	let folderError = $state('');
-	let backend: 'fs' | 'r2' = $state('fs'); // this deployment's storage
+	const backend = $derived(data.backend);
 	let r2Prefix = $state('');
 	let r2Name = $state('');
 	let selectedPath = $state('');
@@ -115,10 +117,6 @@
 	let filename = $derived(selectedPath.split('/').pop() ?? '');
 
 	onMount(() => {
-		loadTree();
-		fetch('/api/status').then(async (r) => {
-			if (r.ok) backend = (await r.json()).backend;
-		});
 		import('$lib/Editor.svelte').then(m => {
 			Editor = m.default;
 		});

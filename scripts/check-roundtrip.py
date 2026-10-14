@@ -46,7 +46,7 @@ OTHER = '# Other\n\nSecond file.\n'
 def wait_for_server():
 	for _ in range(50):
 		try:
-			urllib.request.urlopen(f'http://127.0.0.1:{PORT}/api/status')
+			urllib.request.urlopen(f'http://127.0.0.1:{PORT}/api/files')
 			return
 		except OSError:
 			time.sleep(0.2)
