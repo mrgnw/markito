@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import FileTree from '$lib/FileTree.svelte';
@@ -24,6 +24,7 @@
 	let pendingSaves = 0;
 	let statusMessage = $state('');
 	let Editor: any = $state(null);
+	let editor: { focus(): void } | undefined = $state();
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 	let sidebarOpen = $state(false);
 
@@ -58,6 +59,8 @@
 		loaded = { text: content };
 		dirty = false;
 		statusMessage = '';
+		await tick();
+		editor?.focus();
 	}
 
 	async function save() {
@@ -213,6 +216,7 @@
 			<div class="editor-area">
 				{#if Editor}
 					<Editor
+						bind:this={editor}
 						source={loaded.text}
 						onchange={handleChange}
 					/>

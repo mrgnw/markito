@@ -19,6 +19,11 @@
 	let editor: EditorInstance;
 
 	onMount(() => editor.getEvents().on('edit', () => onchange?.(editor.getSource())));
+
+	export function focus() {
+		const start = { path: [0], offset: 0 };
+		editor.setSelection({ anchor: start, focus: start });
+	}
 </script>
 
 <div class="editor-host">
