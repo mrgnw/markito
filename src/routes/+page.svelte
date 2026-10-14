@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { replaceState } from '$app/navigation';
+	import { page } from '$app/state';
 	import FileTree from '$lib/FileTree.svelte';
 	import FolderPicker from '$lib/FolderPicker.svelte';
 	import type { FileEntry } from '$lib/types';
@@ -12,10 +14,10 @@
 	const backend = $derived(data.backend);
 	let r2Prefix = $state('');
 	let r2Name = $state('');
-	let selectedPath = $state('');
-	let editorContent = $state('');
+	let selectedPath = $derived(data.selected);
+	let editorContent = $derived(data.content);
 	// A new object per load, so reopening a file with unchanged text still reaches the editor.
-	let loaded = $state({ text: '' });
+	let loaded = $derived({ text: data.content });
 	let dirty = $state(false);
 	let saving = $state(false);
 	let statusMessage = $state('');
@@ -28,6 +30,13 @@
 		files = await res.json();
 	}
 
+	function setFileParam(path: string) {
+		const url = new URL(page.url);
+		if (path) url.searchParams.set('f', path);
+		else url.searchParams.delete('f');
+		replaceState(url, page.state);
+	}
+
 	async function loadFile(path: string) {
 		if (dirty && selectedPath) {
 			await save();
@@ -37,6 +46,7 @@
 		editorContent = data.content;
 		loaded = { text: data.content };
 		selectedPath = path;
+		setFileParam(path);
 		dirty = false;
 		statusMessage = '';
 		sidebarOpen = false;
@@ -110,6 +120,7 @@
 		if (selectedPath === id || selectedPath.startsWith(`${id}/`)) {
 			selectedPath = '';
 			editorContent = '';
+			setFileParam('');
 		}
 		await loadTree();
 	}
