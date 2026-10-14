@@ -220,6 +220,12 @@
 						source={loaded.text}
 						onchange={handleChange}
 					/>
+				{:else}
+					<div class="skeleton" aria-hidden="true">
+						<span style="width: 60%"></span>
+						<span style="width: 90%"></span>
+						<span style="width: 40%"></span>
+					</div>
 				{/if}
 			</div>
 		{:else}
@@ -390,6 +396,24 @@
 		display: flex;
 		overflow: auto;
 		background: #ffffff;
+	}
+	.skeleton {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+		padding: 2rem 1.5rem;
+		animation: pulse 1.2s ease-in-out infinite;
+	}
+	.skeleton span {
+		height: 1rem;
+		border-radius: 0.5rem;
+		background: #e5e7eb;
+	}
+	@keyframes pulse {
+		50% {
+			opacity: 0.45;
+		}
 	}
 	.empty {
 		flex: 1;
