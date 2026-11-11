@@ -11,15 +11,11 @@
 	"observability": {
 		"enabled": true
 	},
-	// Custom domain (wrangler creates the DNS + cert on deploy). Protected by
-	// Cloudflare Access — set up the Access app BEFORE the first deploy.
-	"routes": [{ "pattern": "md2.example.com", "custom_domain": true }],
 	// Folder config persists in KV (editable in the UI). An R2 "folder" is a
-	// key prefix in the bound bucket.  Create once: wrangler kv namespace create CONFIG
+	// key prefix in the bound bucket. Wrangler creates the namespace on first deploy.
 	"kv_namespaces": [
 		{
-			"binding": "CONFIG",
-			"id": "070adbb96e624abc86b860d697ab53ca"
+			"binding": "CONFIG"
 		}
 	],
 	// One bound R2 bucket — no credentials needed.  wrangler r2 bucket create markito
