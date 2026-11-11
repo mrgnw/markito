@@ -14,6 +14,6 @@ export default defineConfig({
 	server: {
 		host: '0.0.0.0',
 		port: 5179,
-		allowedHosts: ['.example.ts.net', '.example.com', 'localhost']
+		allowedHosts: (process.env.MARKITO_ALLOWED_HOSTS ?? 'localhost').split(',')
 	}
 });
