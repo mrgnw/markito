@@ -3,6 +3,24 @@
 	"version": "0.1.0",
 	"description": "Edit local markdown files in your browser. Run locally, add folders, edit.",
 	"type": "module",
+	"license": "MIT",
+	"author": "Morgan Williams",
+	"homepage": "https://github.com/mrgnw/markito#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mrgnw/markito.git"
+	},
+	"bugs": {
+		"url": "https://github.com/mrgnw/markito/issues"
+	},
+	"keywords": [
+		"markdown",
+		"editor",
+		"wysiwyg",
+		"sveltekit",
+		"cli",
+		"cloudflare-workers"
+	],
 	"bin": {
 		"markito": "bin/markito.js"
 	},
