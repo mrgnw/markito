@@ -12,7 +12,7 @@ export default defineConfig({
 		__VERSION__: JSON.stringify({ version: pkg.version, commit, built: new Date().toISOString() })
 	},
 	server: {
-		host: '0.0.0.0',
+		host: process.env.HOST ?? '127.0.0.1',
 		port: 5179,
 		allowedHosts: (process.env.MARKITO_ALLOWED_HOSTS ?? 'localhost').split(',')
 	}

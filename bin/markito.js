@@ -32,7 +32,7 @@ Folders can also be added/removed live in the web UI.`);
 }
 
 process.env.PORT = port;
-process.env.HOST = process.env.HOST ?? '0.0.0.0';
+process.env.HOST = process.env.HOST ?? '127.0.0.1';
 if (config) process.env.MARKITO_CONFIG = config;
 if (folders.length) process.env.MARKITO_FOLDERS = folders.join('\n');
 
