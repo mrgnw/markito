@@ -1,4 +1,0 @@
-[markito]
-run = "node bin/markito.js --port 5179"
-restart = true
-ports = [5179]
