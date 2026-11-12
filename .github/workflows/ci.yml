@@ -16,3 +16,4 @@ jobs:
       - run: bun run build
       - run: bun scripts/test-buildtree.ts
       - run: bun scripts/test-config-store.ts
+      - run: bun scripts/test-start-bind.ts

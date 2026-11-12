@@ -30,7 +30,7 @@ bun run build
 node bin/markito.js --folder ~/notes
 ```
 
-Open http://localhost:5179. The server listens on `127.0.0.1` only. Click **+** in the sidebar to add more folders (paste an absolute path); hover a folder to remove it. Folders persist in the config file, so the next run still has them.
+`bun run start` runs the same `bin/markito.js`. Open http://localhost:5179. The server listens on `127.0.0.1` only unless you set `HOST` (see below). Click **+** in the sidebar to add more folders (paste an absolute path); hover a folder to remove it. Folders persist in the config file, so the next run still has them.
 
 To seed several folders at once, repeat the flag:
 
