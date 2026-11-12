@@ -20,7 +20,7 @@ People who keep notes, docs or journals as plain markdown files (an Obsidian-sty
 
 ## Run it
 
-Requires [Bun](https://bun.sh) and Node 20 or newer. markito is not on npm yet ([roadmap](ROADMAP.md)), so run it from a clone.
+Requires [Bun](https://bun.sh) and Node `^20.19.0` or `>=22.12.0` (the range Vite 7 supports). markito is not on npm yet ([roadmap](ROADMAP.md)), so run it from a clone.
 
 ```sh
 git clone https://github.com/mrgnw/markito.git
