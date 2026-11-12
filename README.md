@@ -5,7 +5,7 @@ Edit local markdown files in your browser.
 markito is a small web app that serves the markdown files in folders you choose and lets you edit them in a WYSIWYG editor ([Aragonite](https://github.com/voithos-labs/aragonite)) with autosave. Saving writes back the file as it was plus your edits; formatting you did not touch is left alone, so diffs stay small.
 
 > [!NOTE]
-> This project was built with heavy LLM assistance and should be considered proof-of-concept. Contributions are welcome, but I can't guarantee the accuracy of the code or that I will continue to maintain it. If there are any mistakes in attribution or anything else, please let me know.
+> This project was built with heavy LLM assistance and should be considered proof-of-concept. Known limits today: a failed save can still show "Saved" ([#1](https://github.com/mrgnw/markito/issues/1)), there is no check for files changed on disk ([#2](https://github.com/mrgnw/markito/issues/2)), writes are not atomic ([#3](https://github.com/mrgnw/markito/issues/3)), and there is no built-in login ([#8](https://github.com/mrgnw/markito/issues/8)). Contributions are welcome. If there are any mistakes in attribution or anything else, please let me know.
 
 ## Who it's for
 
@@ -49,7 +49,7 @@ node bin/markito.js --folder ~/notes --folder ~/docs
 
 ### Exposing it on a network
 
-markito has no login. Anyone who can reach the port can read and write the folders you added, and browse your disk from the add-folder dialog. Keep the default `127.0.0.1`, or put it behind something that authenticates (Cloudflare Access, a VPN). To listen on all interfaces:
+markito has no login. Anyone who can reach the port can read and write the folders you added, and browse your disk from the add-folder dialog. Keep the default `127.0.0.1`, or put it behind something that authenticates (Cloudflare Access). A VPN only limits who can reach the port; everyone on it can still read and write your folders. To listen on all interfaces (works the same with `bun run start`):
 
 ```sh
 HOST=0.0.0.0 node bin/markito.js --folder ~/notes
@@ -73,7 +73,7 @@ MARKITO_ALLOWED_HOSTS=localhost,notes.example.ts.net HOST=0.0.0.0 bun run dev
 }
 ```
 
-Only `.md` files are shown and editable. Each file is addressed as `{folderId}/{relative/path}`; reads and writes are guarded against escaping a folder's root.
+Only `.md` files are shown in the sidebar; that is a display filter, not an access rule, and the file API does not enforce it. Each file is addressed as `{folderId}/{relative/path}`. Paths are checked lexically so `..` cannot escape a folder's root; symlink targets are not yet confined ([#4](https://github.com/mrgnw/markito/issues/4)).
 
 | Variable | Default | Purpose |
 |-|-|-|
@@ -98,7 +98,7 @@ R2 uses a single bucket bound as `BUCKET`, with no credentials. An R2 "folder" i
 
 ## Deploy to Cloudflare Workers
 
-The Workers build keeps folder config in a KV namespace (`CONFIG`, created on first deploy) and files in an R2 bucket named `markito`. Put it behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) before storing anything private.
+The Workers build keeps folder config in a KV namespace (`CONFIG`, created on first deploy) and files in an R2 bucket named `markito`. Put it behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) before storing anything private, and make sure the policy covers the pages and the `/api/*` routes. markito has no authentication of its own, and no production deployment has been verified; CI does not build the Workers target.
 
 ```sh
 bunx wrangler r2 bucket create markito
