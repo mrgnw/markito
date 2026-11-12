@@ -1,6 +1,6 @@
 # Roadmap
 
-Each item is a GitHub issue scoped to a few hours, with acceptance criteria.
+Each item is a GitHub issue with acceptance criteria. Sizes range from about an hour (name filter, browser CI) to a day (file operations, safe writes), so the safety items come first.
 
 ## Already shipped
 
