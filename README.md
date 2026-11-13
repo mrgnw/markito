@@ -1,124 +1,154 @@
 # markito
 
-Edit local markdown files in your browser.
+Browse a folder of markdown files and edit them in your browser, with autosave back to the originals.
 
-markito is a small web app that serves the markdown files in folders you choose and lets you edit them in a WYSIWYG editor ([Aragonite](https://github.com/voithos-labs/aragonite)) with autosave. Saving writes back the file as it was plus your edits; formatting you did not touch is left alone, so diffs stay small.
+[![CI](https://img.shields.io/github/actions/workflow/status/mrgnw/markito/ci.yml?branch=main&style=flat&label=CI)](https://github.com/mrgnw/markito/actions/workflows/ci.yml)
+[![MIT license](https://img.shields.io/github/license/mrgnw/markito?style=flat)](LICENSE)
+[![Last commit](https://img.shields.io/github/last-commit/mrgnw/markito?style=flat)](https://github.com/mrgnw/markito/commits/main/)
+[![Open issues](https://img.shields.io/github/issues/mrgnw/markito?style=flat)](https://github.com/mrgnw/markito/issues)
+[![Svelte 5](https://img.shields.io/badge/Svelte-5-ff3e00?style=flat&logo=svelte&logoColor=white)](https://svelte.dev)
+[![SvelteKit 2](https://img.shields.io/badge/SvelteKit-2-ff3e00?style=flat&logo=svelte&logoColor=white)](https://svelte.dev/docs/kit)
+[![Bun](https://img.shields.io/badge/Bun-scripts-14151a?style=flat&logo=bun&logoColor=white)](https://bun.sh)
 
 > [!NOTE]
-> This project was built with heavy LLM assistance and should be considered proof-of-concept. Known limits today: a failed save can still show "Saved" ([#1](https://github.com/mrgnw/markito/issues/1)), there is no check for files changed on disk ([#2](https://github.com/mrgnw/markito/issues/2)), writes are not atomic ([#3](https://github.com/mrgnw/markito/issues/3)), and there is no built-in login ([#8](https://github.com/mrgnw/markito/issues/8)). Contributions are welcome. If there are any mistakes in attribution or anything else, please let me know.
+> This project was built with heavy LLM assistance and should be considered proof-of-concept. Known save and access limits are listed under [Safety](#safety). Contributions are welcome. If there are any mistakes in attribution or anything else, please let me know.
+
+![Adding a demo Notes folder, opening Weekly-plan.md, editing a paragraph, and autosaving](docs/media/hero.gif)
+
+*Real app, made-up notes: add a folder, choose a file, and write. No import step.*
 
 ## Who it's for
 
-People who keep notes, docs or journals as plain markdown files (an Obsidian-style folder, a repo's `docs/`) and want a clean editor in the browser without importing them into an app or changing the files on disk. It also runs on Cloudflare Workers, storing files in an R2 bucket, for editing the same notes from anywhere.
+- People who keep notes or journals in a plain markdown folder and want a visual editor.
+- Developers editing a repository's documentation without moving files into a separate database.
+- People with an Obsidian-style folder who want another way to edit its existing `.md` files.
 
-## Built with
+The local Node server reads and writes folders on your computer. The Cloudflare Workers build edits objects in an R2 bucket. They are separate storage modes; markito does not sync local folders to R2.
 
-- [SvelteKit](https://svelte.dev/docs/kit) and Svelte 5
-- [Aragonite](https://github.com/voithos-labs/aragonite) editor
-- Node (`@sveltejs/adapter-node`) for local folders, Cloudflare Workers with R2 and KV (`@sveltejs/adapter-cloudflare`) for the hosted build
-- [Bun](https://bun.sh) for installing and scripts
+## 30-second quick start
 
-## Run it
+Requires [Bun](https://bun.sh) and Node `^20.19.0` or `>=22.12.0`. **markito is not published on npm yet.** Run it from source; installation and build time depend on your machine and connection.
 
-Requires [Bun](https://bun.sh) and Node `^20.19.0` or `>=22.12.0` (the range Vite 7 supports). markito is not on npm yet ([roadmap](ROADMAP.md)), so run it from a clone.
+Set the clone location and create a disposable demo folder first:
 
 ```sh
-git clone https://github.com/mrgnw/markito.git
-cd markito
-bun install
+MARKITO_SOURCE="$PWD/markito"
+```
+
+```sh
+MARKITO_NOTES=$(mktemp -d "${TMPDIR:-/tmp}/markito-demo.XXXXXX")
+```
+
+```sh
+git clone https://github.com/mrgnw/markito.git "$MARKITO_SOURCE"
+```
+
+```sh
+cd "$MARKITO_SOURCE"
+```
+
+```sh
+bun install --frozen-lockfile
+```
+
+```sh
 bun run build
-node bin/markito.js --folder ~/notes
 ```
-
-`bun run start` runs the same `bin/markito.js`. Open http://localhost:5179. The server listens on `127.0.0.1` only unless you set `HOST` (see below). Click **+** in the sidebar to add more folders (paste an absolute path); hover a folder to remove it. Folders persist in the config file, so the next run still has them.
-
-To seed several folders at once, repeat the flag:
 
 ```sh
-node bin/markito.js --folder ~/notes --folder ~/docs
+printf '# Welcome\n\nA little space to think.\n' > "$MARKITO_NOTES/Welcome.md"
 ```
-
-### Options
-
-```
--f, --folder <path>   Add a folder to edit (repeatable). Persisted to config.
--p, --port <port>     Port to listen on (default 5179)
--c, --config <path>   Config file (default ~/.config/markito/config.json)
--h, --help            Show help
-```
-
-### Exposing it on a network
-
-markito has no login. Anyone who can reach the port can read and write the folders you added, and browse your disk from the add-folder dialog. Keep the default `127.0.0.1`, or put it behind something that authenticates (Cloudflare Access). A VPN only limits who can reach the port; everyone on it can still read and write your folders. To listen on all interfaces (works the same with `bun run start`):
 
 ```sh
-HOST=0.0.0.0 node bin/markito.js --folder ~/notes
+node bin/markito.js --folder "$MARKITO_NOTES"
 ```
 
-In `bun run dev`, extra hostnames must be allowed explicitly:
+Open http://localhost:5179 and select **Welcome.md**. The server binds to `127.0.0.1` by default. Stop it with Ctrl+C.
+
+To use your own notes, choose an existing folder before starting the server:
 
 ```sh
-MARKITO_ALLOWED_HOSTS=localhost,notes.example.ts.net HOST=0.0.0.0 bun run dev
+MARKITO_NOTES="$HOME/notes"
 ```
 
-## Config
-
-`~/.config/markito/config.json` (respects `$XDG_CONFIG_HOME`, or `MARKITO_CONFIG`), created when the first folder is added:
-
-```json
-{
-  "folders": [
-    { "id": "notes", "name": "notes", "path": "~/notes" }
-  ]
-}
+```sh
+node bin/markito.js --folder "$MARKITO_NOTES"
 ```
 
-Only `.md` files are shown in the sidebar; that is a display filter, not an access rule, and the file API does not enforce it. Each file is addressed as `{folderId}/{relative/path}`. Paths are checked lexically so `..` cannot escape a folder's root; symlink targets are not yet confined ([#4](https://github.com/mrgnw/markito/issues/4)).
+Repeat the folder flag to seed more folders. In the sidebar, **+** opens the folder browser; click a folder to add it or its chevron to browse inside. Hover an added folder to remove it from the sidebar. Removing a folder does not delete its files. Folder choices persist across restarts.
+
+## How saving works
+
+1. The [Aragonite](https://github.com/voithos-labs/aragonite) visual editor preserves untouched markdown source, keeping diffs small.
+2. Edits autosave two seconds after you stop typing.
+3. Cmd/Ctrl+S saves immediately; switching files also triggers a save.
+4. A local save writes to the original file; a hosted save replaces the R2 object.
+
+## Safety
+
+Use copies or version-controlled notes while evaluating this proof-of-concept. A failed save can still appear successful ([#1](https://github.com/mrgnw/markito/issues/1)). External changes are not detected before overwriting ([#2](https://github.com/mrgnw/markito/issues/2)), and local writes are not atomic ([#3](https://github.com/mrgnw/markito/issues/3)).
+
+**Localhost is the default; network access is opt-in.** There is no built-in login. Anyone who can reach the server can read and write added folders, browse the server's disk through the folder picker, and add more folders. A VPN limits reachability but does not give individual users separate permissions.
+
+Only expose it behind authentication such as Cloudflare Access. To opt in to listening on all network interfaces:
+
+```sh
+HOST=0.0.0.0 node bin/markito.js --folder "$MARKITO_NOTES"
+```
+
+The sidebar lists `.md` files. That filter is not an access rule; the file API does not enforce the extension. Paths are checked lexically against the folder root, but symlink targets are not confined ([#4](https://github.com/mrgnw/markito/issues/4)). This is not a filesystem sandbox.
+
+Folder additions through the UI are capped at 64. Local tree traversal uses a depth limit of 32 and a shared 20,000-entry budget; these are best-effort traversal limits, not hard memory bounds. R2 listing stops after 100 pages of up to 1,000 objects. File reads load the full contents into memory. Use small, trusted folders.
+
+## Configuration
+
+Local folder choices live in `~/.config/markito/config.json`, created when the first folder is added. `XDG_CONFIG_HOME` changes the config directory; the config flag or `MARKITO_CONFIG` selects a specific file. Config paths are resolved as filesystem paths; use absolute paths in JSON rather than a literal `~`.
+
+| CLI option | Default | Purpose |
+|-|-|-|
+| `-f`, `--folder` | none | Add an existing folder; repeatable and persisted |
+| `-p`, `--port` | `PORT` or `5179` | Choose the listening port |
+| `-c`, `--config` | `MARKITO_CONFIG` or standard location | Choose the config file |
+| `-h`, `--help` | — | Show usage and exit |
 
 | Variable | Default | Purpose |
 |-|-|-|
-| `HOST` | `127.0.0.1` | Address to listen on |
-| `PORT` | `5179` | Port to listen on |
-| `MARKITO_CONFIG` | `~/.config/markito/config.json` | Config file |
-| `MARKITO_FOLDERS` | none | Newline-separated folders to seed (set by `--folder`) |
-| `MARKITO_ALLOWED_HOSTS` | `localhost` | Extra hostnames for `bun run dev` |
+| `HOST` | `127.0.0.1` | Listening address; changing it opts in to network exposure |
+| `PORT` | `5179` | Listening port; the CLI port flag takes precedence |
+| `MARKITO_CONFIG` | `~/.config/markito/config.json` | Config file; the CLI config flag takes precedence |
+| `XDG_CONFIG_HOME` | `~/.config` | Base directory for the default config location |
+| `MARKITO_FOLDERS` | none | Newline-separated local folders to seed; set by the CLI folder flags |
+| `MARKITO_ALLOWED_HOSTS` | `localhost` | Comma-separated allowed hostnames for the Vite development server |
 
-## Storage backends
+For development through a tailnet hostname, set the actual hostname explicitly alongside localhost. This changes the host allowlist, not authentication.
 
-A folder is backed by either the local filesystem (`fs`) or the bound Cloudflare R2 bucket (`r2`):
+## Cloudflare Workers and R2
 
-```json
-{ "folders": [
-  { "id": "notes",   "backend": "fs", "path": "~/notes" },
-  { "id": "journal", "backend": "r2", "prefix": "journal/" }
-] }
-```
+The Workers build uses one R2 bucket bound as `BUCKET` and a KV namespace bound as `CONFIG`. Folder choices live in KV, and each R2 folder is a key prefix. The Node build supports local folders only. See [wrangler.jsonc](wrangler.jsonc) for the bindings.
 
-R2 uses a single bucket bound as `BUCKET`, with no credentials. An R2 "folder" is a key prefix in that bucket. R2 is Workers-only; the node build disables it.
+Put the hosted app behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/access-controls/) before storing private notes. Protect both pages and `/api/*` routes. No production deployment has been verified; CI currently checks the Node target.
 
-## Deploy to Cloudflare Workers
-
-The Workers build keeps folder config in a KV namespace (`CONFIG`, created on first deploy) and files in an R2 bucket named `markito`. Put it behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) before storing anything private, and make sure the policy covers the pages and the `/api/*` routes. markito has no authentication of its own, and no production deployment has been verified; CI does not build the Workers target.
+With Wrangler authenticated to your Cloudflare account, create the bucket:
 
 ```sh
 bunx wrangler r2 bucket create markito
+```
+
+Build and deploy the Workers target; Wrangler creates the configured KV namespace on first deploy:
+
+```sh
 bun run ship
 ```
 
-## Develop
+## Built with
 
-```sh
-bun install
-bun run dev
-bun run check
-bun run test
-```
+[Svelte 5](https://svelte.dev), [SvelteKit](https://svelte.dev/docs/kit), and [Aragonite](https://github.com/voithos-labs/aragonite). Bun installs dependencies and runs scripts. SvelteKit's Node and Cloudflare adapters provide the two server targets.
 
-`bun run dev` serves http://localhost:5179. `bun run test` runs unit tests, then builds and runs a browser check that saving keeps the file's bytes; it needs [uv](https://docs.astral.sh/uv/) and Playwright's Chromium (`uvx playwright install chromium`).
+## Roadmap and contributing
 
-## Roadmap
+See the [roadmap](ROADMAP.md) for safety work, file operations, search, and npm distribution. Recent changes are in the [changelog](CHANGELOG.md).
 
-See [ROADMAP.md](ROADMAP.md) and the [open issues](https://github.com/mrgnw/markito/issues). Recent changes are in [CHANGELOG.md](CHANGELOG.md).
+Bug reports, documentation fixes, and focused pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup and checks, or pick a [good first issue](https://github.com/mrgnw/markito/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22).
 
 ## License
 
@@ -126,5 +156,5 @@ This project is licensed under [MIT](LICENSE).
 
 Notable dependencies with their own licenses:
 
-- [Aragonite](https://github.com/voithos-labs/aragonite) - MPL-2.0 (the editor)
-- [Fontsource](https://fontsource.org) Lora and Martian Mono - OFL-1.1 (fonts)
+- [Aragonite](https://github.com/voithos-labs/aragonite) — MPL-2.0 (the editor).
+- [Fontsource](https://fontsource.org) Lora and Martian Mono — OFL-1.1 (fonts).
